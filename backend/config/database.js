@@ -1,16 +1,19 @@
 import { Sequelize } from "sequelize";
 import "dotenv/config";
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    dialect: process.env.DB_DIALECT,
-    port: process.env.DB_PORT,
-  }
-);
+// Si detecta DATABASE_URL (en producción), la usa. Si no, usa las variables locales.
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL)
+  : new Sequelize(
+      process.env.DB_NAME,
+      process.env.DB_USER,
+      process.env.DB_PASSWORD,
+      {
+        host: process.env.DB_HOST,
+        dialect: process.env.DB_DIALECT,
+        port: process.env.DB_PORT,
+      }
+    );
 
 export const connectDB = async () => {
   try {
@@ -22,4 +25,4 @@ export const connectDB = async () => {
   }
 };
 
-export default sequelize
+export default sequelize;
