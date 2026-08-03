@@ -84,8 +84,10 @@ export const obtenerPresupuesto = async (req, res) => {
 
 // ─── POST crear/reemplazar presupuesto ───────────────────────────────────────
 export const crearPresupuesto = async (req, res) => {
-  const t = await sequelize.transaction();
+  let t;
   try {
+    console.log('crearPresupuesto: inicio', { obraId: req.params?.obraId, usuario: req.usuario?.id });
+    t = await sequelize.transaction();
     const { obraId } = req.params;
     const { precio_ofertado, pct_rebaja = 0, items = [], notas } = req.body;
 
@@ -133,15 +135,17 @@ export const crearPresupuesto = async (req, res) => {
       };
     });
 
+    console.log('crearPresupuesto: guardando items, count=', itemsParaGuardar.length);
     await ItemPresupuesto.bulkCreate(itemsParaGuardar, { transaction: t });
     await t.commit();
+    console.log('crearPresupuesto: commit OK');
 
     const resultado = await Presupuesto.findByPk(presupuesto.id, {
       include: [{ model: ItemPresupuesto, as: 'items' }],
     });
     return res.status(201).json(resultado);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Error al crear presupuesto:', error);
     return res.status(500).json({ error: error.message || 'Error interno.' });
   }
@@ -150,6 +154,7 @@ export const crearPresupuesto = async (req, res) => {
 // ─── PATCH aprobar ────────────────────────────────────────────────────────────
 export const aprobarPresupuesto = async (req, res) => {
   try {
+    console.log('aprobarPresupuesto: inicio', { obraId: req.params?.obraId, usuario: req.usuario?.id });
     const { obraId } = req.params;
     const obra = await Obra.findOne({ where: { id: obraId, usuario_id: req.usuario.id } });
     if (!obra) return res.status(404).json({ error: 'Obra no encontrada.' });
@@ -158,6 +163,7 @@ export const aprobarPresupuesto = async (req, res) => {
     if (!presupuesto) return res.status(404).json({ error: 'No hay presupuesto para aprobar.' });
 
     await presupuesto.update({ aprobado: true });
+    console.log('aprobarPresupuesto: actualizado aprobado=true, id=', presupuesto.id);
     return res.json({ mensaje: 'Presupuesto aprobado.', presupuesto });
   } catch (error) {
     console.error('Error al aprobar:', error);
