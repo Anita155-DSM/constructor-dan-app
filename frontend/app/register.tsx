@@ -12,8 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-const API_BASE_URL = 'http://localhost:3000/api/auth';
+import { API_BASE } from '../utils/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -35,7 +34,7 @@ export default function RegisterScreen() {
     setCargando(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/register`, {
+      const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +55,7 @@ export default function RegisterScreen() {
     } catch (error) {
       Alert.alert(
         'Sin conexión',
-        'No se pudo conectar al servidor. Verificá que el backend esté corriendo en localhost:3000.'
+        'No se pudo conectar al servidor. Verificá tu conexión o el backend desplegado.'
       );
     } finally {
       setCargando(false);
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '900',
     color: '#1F2937',
     textAlign: 'center',

@@ -35,7 +35,7 @@ export default function LoginScreen() {
         Alert.alert('Error', data.msg || 'Correo o contraseña incorrectos.');
       }
     } catch {
-      Alert.alert('Sin conexión', 'Verificá que el backend esté corriendo en localhost:3000.');
+      Alert.alert('Sin conexión', 'Verificá tu conexión o que el backend desplegado esté activo.');
     } finally {
       setCargando(false);
     }
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, justifyContent: 'center' },
   formContainer: { paddingHorizontal: 24, paddingVertical: 40 },
   accentBar: { height: 8, backgroundColor: '#FBBF24', borderRadius: 4, marginBottom: 24, width: '40%', alignSelf: 'center' },
-  title: { fontSize: 30, fontWeight: '900', color: '#1F2937', textAlign: 'center', letterSpacing: 1, marginBottom: 4 },
+  title: { fontSize: 25, fontWeight: '900', color: '#1F2937', textAlign: 'center', letterSpacing: 1, marginBottom: 4 },
   subtitle: { fontSize: 16, color: '#4B5563', textAlign: 'center', marginBottom: 36, fontWeight: '500' },
   inputGroup: { marginBottom: 22 },
   label: { fontSize: 16, fontWeight: 'bold', color: '#374151', marginBottom: 6 },

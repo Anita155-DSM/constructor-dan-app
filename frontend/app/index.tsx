@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     width: '40%',
   },
   title: {
-    fontSize: 32,
+    fontSize: 25,
     fontWeight: '900',
     color: '#1F2937',
     textAlign: 'center',

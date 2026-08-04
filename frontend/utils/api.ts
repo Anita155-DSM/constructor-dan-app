@@ -2,7 +2,7 @@
 // Centraliza la URL base y el header de autorización.
 // Todas las pantallas importan desde acá — si cambia algo, se cambia en un solo lugar.
 
-export const API_BASE = 'http://192.168.1.113:3000/api';
+export const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://constructordan.onrender.com/api';
 
 /**
  * Devuelve el header Authorization con el token JWT guardado en localStorage.
