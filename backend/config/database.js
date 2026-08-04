@@ -9,17 +9,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 let sequelize;
 
 if (process.env.DATABASE_URL) {
-  // ── Producción: Aiven con SSL ──────────────────────────────────────────────
-  // Separamos la URI de las opciones SSL — NO incluir ?ssl-mode=... en la URI.
-  // Aiven requiere el certificado CA para verificar el servidor.
+  // ── Producción: Aiven con SSL ─────────────────────────────────────────────
+  // Usamos la clase URL para parsear y limpiar la URI correctamente.
+  // mysql2 no entiende parámetros como ssl-mode, sslmode, ssl, etc.
+  // Todo lo relacionado a SSL va en dialectOptions, no en la URI.
+  const parsed = new URL(process.env.DATABASE_URL);
+
+  // Eliminar TODOS los parámetros SSL del query string
+  const SSL_PARAMS = ['ssl-mode', 'sslmode', 'ssl', 'tls', 'require_secure_transport'];
+  SSL_PARAMS.forEach(p => parsed.searchParams.delete(p));
+
+  const cleanUrl = parsed.toString();
+
+  // Leer el certificado CA de Aiven
+  // Descargarlo desde: Aiven Console → tu servicio → Overview → CA Certificate
   const caPem = readFileSync(join(__dirname, '..', 'ca.pem'));
 
-  // Limpiar cualquier parámetro ssl-mode que pueda venir en la URI
-  const dbUrl = process.env.DATABASE_URL.replace(/[?&]ssl-mode=[^&]*/gi, '');
-
-  sequelize = new Sequelize(dbUrl, {
+  sequelize = new Sequelize(cleanUrl, {
     dialect: 'mysql',
-    dialectModule: (await import('mysql2')).default,
     dialectOptions: {
       ssl: {
         ca:                 caPem,
@@ -28,15 +35,16 @@ if (process.env.DATABASE_URL) {
     },
     logging: false,
   });
+
 } else {
-  // ── Desarrollo local: XAMPP sin SSL ───────────────────────────────────────
+  // ── Desarrollo local: XAMPP sin SSL ──────────────────────────────────────
   sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
     process.env.DB_PASSWORD,
     {
       host:    process.env.DB_HOST    || 'localhost',
-      port:    process.env.DB_PORT    || 3306,
+      port:    parseInt(process.env.DB_PORT) || 3306,
       dialect: process.env.DB_DIALECT || 'mysql',
       logging: false,
     }
