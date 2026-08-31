@@ -1,6 +1,11 @@
 (async ()=>{
-  const base = 'http://localhost:3000/api';
-  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibm9tYnJlIjoiRnJhbmNpc2NvIERhbmllbCBQZXJleiIsImVtYWlsIjoiZGFuaWVscGVyZXoyOTExODNAZ21haWwuY29tIiwiaWF0IjoxNzg1Njk2NDU1LCJleHAiOjE3ODYzMDEyNTV9.OMwEQEEIjKyeHe47bcUVCrpW300HC7WPy4Pu64gfLbk';
+  const base = process.env.API_BASE || 'http://localhost:3000/api';
+  // El token se pasa por env o como primer argumento: node scripts/check_token.js <token>
+  const token = process.env.TOKEN || process.argv[2];
+  if (!token) {
+    console.error('Falta el token. Usá: TOKEN=<jwt> node scripts/check_token.js  (o pasalo como argumento)');
+    process.exit(1);
+  }
   const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
   try {
     const res = await fetch(base + '/obras', { headers });

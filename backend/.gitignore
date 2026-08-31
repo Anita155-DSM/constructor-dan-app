@@ -1,5 +1,13 @@
 node_modules
 /node_modules
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
 env
 /env
-/.env
+
+# Certificado CA de la base de datos (producción)
+ca.pem
+*.pem

@@ -1,4 +1,7 @@
 import Obra from '../models/Obra.js';
+import Presupuesto, { ItemPresupuesto } from '../models/Presupuesto.js';
+import SemanaNomina, { PeonNomina } from '../models/Nomina.js';
+import sequelize from '../config/database.js';
 
 // ─── Listar todas las obras del usuario logueado ───────────────────────────
 export const listarObras = async (req, res) => {
@@ -156,21 +159,48 @@ export const cambiarEstado = async (req, res) => {
 };
 
 // ─── Eliminar una obra ─────────────────────────────────────────────────────
-// Solo se puede eliminar si NO tiene semanas de nómina registradas.
-// Por ahora la validación es simple; en Sprint 4 se agrega la FK real.
+// Borra en cascada presupuesto y nómina de la obra dentro de una transacción,
+// para no dejar filas huérfanas (las tablas no tienen ON DELETE CASCADE real).
 export const eliminarObra = async (req, res) => {
-  try {
-    const obra = await Obra.findOne({
-      where: { id: req.params.id, usuario_id: req.usuario.id },
-    });
+  const obra = await Obra.findOne({
+    where: { id: req.params.id, usuario_id: req.usuario.id },
+  });
+  if (!obra) {
+    return res.status(404).json({ error: 'Obra no encontrada.' });
+  }
 
-    if (!obra) {
-      return res.status(404).json({ error: 'Obra no encontrada.' });
+  let t;
+  let committed = false;
+  try {
+    t = await sequelize.transaction();
+
+    const presupuestos = await Presupuesto.findAll({
+      where: { obra_id: obra.id }, attributes: ['id'], transaction: t,
+    });
+    if (presupuestos.length) {
+      await ItemPresupuesto.destroy({
+        where: { presupuesto_id: presupuestos.map(p => p.id) }, transaction: t,
+      });
+      await Presupuesto.destroy({ where: { obra_id: obra.id }, transaction: t });
     }
 
-    await obra.destroy();
+    const semanas = await SemanaNomina.findAll({
+      where: { obra_id: obra.id }, attributes: ['id'], transaction: t,
+    });
+    if (semanas.length) {
+      await PeonNomina.destroy({
+        where: { semana_id: semanas.map(s => s.id) }, transaction: t,
+      });
+      await SemanaNomina.destroy({ where: { obra_id: obra.id }, transaction: t });
+    }
+
+    await obra.destroy({ transaction: t });
+    await t.commit();
+    committed = true;
+
     return res.json({ mensaje: 'Obra eliminada correctamente.' });
   } catch (error) {
+    if (t && !committed) await t.rollback();
     console.error('Error al eliminar obra:', error);
     return res.status(500).json({ error: 'Error interno del servidor.' });
   }

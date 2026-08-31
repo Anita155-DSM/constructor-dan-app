@@ -2,8 +2,6 @@ import SemanaNomina, { PeonNomina, PeonFrecuente } from '../models/Nomina.js';
 import Obra from '../models/Obra.js';
 import  sequelize  from '../config/database.js';
 
-const DIAS_SEMANA = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // Devuelve el lunes de la semana de una fecha dada (o de hoy)
@@ -82,19 +80,22 @@ export const obtenerSemanaActual = async (req, res) => {
 
 // ─── Guardar nómina de una semana ────────────────────────────────────────────
 export const guardarNomina = async (req, res) => {
+  const { obraId } = req.params;
+  const { fecha_lunes, monto_recibido, quien_pago, peones = [], notas } = req.body;
+
+  // Validar antes de abrir la transacción para no dejar conexiones colgadas.
+  if (monto_recibido == null || parseFloat(monto_recibido) < 0)
+    return res.status(400).json({ error: 'El monto recibido es obligatorio.' });
+  if (!Array.isArray(peones) || peones.length === 0)
+    return res.status(400).json({ error: 'Agregá al menos un peón (incluso vos mismo).' });
+
+  const obra = await verificarObra(obraId, req.usuario.id);
+  if (!obra) return res.status(404).json({ error: 'Obra no encontrada.' });
+
   let t;
+  let committed = false;
   try {
     t = await sequelize.transaction();
-    const { obraId } = req.params;
-    const { fecha_lunes, monto_recibido, quien_pago, peones = [], notas } = req.body;
-
-    if (!monto_recibido || parseFloat(monto_recibido) < 0)
-      return res.status(400).json({ error: 'El monto recibido es obligatorio.' });
-    if (peones.length === 0)
-      return res.status(400).json({ error: 'Agregá al menos un peón (incluso vos mismo).' });
-
-    const obra = await verificarObra(obraId, req.usuario.id);
-    if (!obra) return res.status(404).json({ error: 'Obra no encontrada.' });
 
     const semanaKey = fecha_lunes || getLunes();
     const montoNum  = parseFloat(monto_recibido);
@@ -152,6 +153,7 @@ export const guardarNomina = async (req, res) => {
     );
 
     await t.commit();
+    committed = true;
 
     // Actualizar agenda de peones frecuentes silenciosamente
     for (const p of peonesCalc) {
@@ -172,7 +174,7 @@ export const guardarNomina = async (req, res) => {
     });
     return res.status(existente ? 200 : 201).json(resultado);
   } catch (err) {
-    if (t) await t.rollback();
+    if (t && !committed) await t.rollback();
     console.error(err);
     return res.status(500).json({ error: err.message || 'Error interno.' });
   }

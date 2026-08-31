@@ -2,6 +2,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Usuario from '../models/Usuario.js';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ES_PROD  = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL;
+
+// Opciones de la cookie de sesión. En producción el front vive en otro dominio
+// (HTTPS), así que la cookie tiene que ser SameSite=None + Secure para viajar.
+const COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: ES_PROD ? 'none' : 'lax',
+  secure:   ES_PROD,
+  maxAge:   7 * 24 * 60 * 60 * 1000, // 7 días en ms
+  path:     '/',
+};
+
 // ─── Registro ─────────────────────────────────────────────────────────────────
 export const register = async (req, res) => {
   try {
@@ -10,18 +23,22 @@ export const register = async (req, res) => {
     if (!nombre || !email || !password)
       return res.status(400).json({ ok: false, msg: 'Todos los campos son obligatorios.' });
 
+    if (!EMAIL_RE.test(email))
+      return res.status(400).json({ ok: false, msg: 'El correo no tiene un formato válido.' });
+
     if (password.length < 6)
       return res.status(400).json({ ok: false, msg: 'La contraseña debe tener al menos 6 caracteres.' });
 
-    const existe = await Usuario.findOne({ where: { email: email.toLowerCase() } });
+    const emailNorm = email.toLowerCase().trim();
+    const existe = await Usuario.findOne({ where: { email: emailNorm } });
     if (existe)
       return res.status(409).json({ ok: false, msg: 'Ya existe una cuenta con ese correo.' });
 
     const hash = await bcrypt.hash(password, 10);
     const usuario = await Usuario.create({
       nombre: nombre.trim(),
-      email: email.toLowerCase().trim(),
-      password_hash: hash, // 👈 CAMBIO AQUÍ (password_hash)
+      email: emailNorm,
+      password_hash: hash,
     });
 
     const token = generarToken(usuario);
@@ -50,7 +67,6 @@ export const login = async (req, res) => {
     if (!usuario)
       return res.status(401).json({ ok: false, msg: 'Correo o contraseña incorrectos.' });
 
-    // 👈 CAMBIO AQUÍ: Usamos usuario.password_hash en vez de usuario.password
     const valido = await bcrypt.compare(password, usuario.password_hash);
     if (!valido)
       return res.status(401).json({ ok: false, msg: 'Correo o contraseña incorrectos.' });
@@ -71,7 +87,8 @@ export const login = async (req, res) => {
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 export const logout = (req, res) => {
-  res.clearCookie('token');
+  // clearCookie tiene que recibir las mismas opciones con las que se seteó.
+  res.clearCookie('token', { ...COOKIE_OPTS, maxAge: undefined });
   return res.json({ ok: true, msg: 'Sesión cerrada.' });
 };
 
@@ -85,9 +102,5 @@ function generarToken(usuario) {
 }
 
 function setTokenCookie(res, token) {
-  res.cookie('token', token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 días en ms
-  });
+  res.cookie('token', token, COOKIE_OPTS);
 }

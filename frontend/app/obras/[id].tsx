@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, limpiarSesion } from '../../utils/api';
 
 type TipoObra   = 'normal' | 'galpon' | 'refaccion';
 type EstadoObra = 'activa' | 'pausada' | 'terminada';
@@ -59,6 +59,7 @@ export default function DetalleObraScreen() {
   const [modalEstado, setModalEstado] = useState(false);
   const [cambiando, setCambiando]     = useState(false);
   const [eliminando, setEliminando]   = useState(false);
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
 
   const cargar = useCallback(async (silencioso = false) => {
     if (!silencioso) setCargando(true);
@@ -109,6 +110,7 @@ export default function DetalleObraScreen() {
 
   const eliminarObra = async () => {
     if (eliminando) return;
+    setConfirmarBorrado(false);
     setEliminando(true);
     try {
       const res = await apiFetch(`/obras/${id}`, { method: 'DELETE' });
@@ -160,7 +162,7 @@ export default function DetalleObraScreen() {
           <Text style={s.backText}>← Volver</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{obra.nombre_cliente}</Text>
-        <TouchableOpacity onPress={eliminarObra} style={[s.deleteBtn, eliminando && s.deleteBtnDisabled]} disabled={eliminando}>
+        <TouchableOpacity onPress={() => setConfirmarBorrado(true)} style={[s.deleteBtn, eliminando && s.deleteBtnDisabled]} disabled={eliminando}>
           {eliminando
             ? <ActivityIndicator size="small" color="#FFFFFF" />
             : <MaterialCommunityIcons name="trash-can-outline" size={22} color="#FFFFFF" />
@@ -308,6 +310,29 @@ export default function DetalleObraScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Modal confirmar eliminación — evita borrar la obra de un solo toque */}
+      <Modal visible={confirmarBorrado} transparent animationType="fade" onRequestClose={() => setConfirmarBorrado(false)}>
+        <View style={[s.modalOverlay, { justifyContent: 'center' }]}>
+          <View style={s.confirmSheet}>
+            <Text style={s.confirmTitle}>¿Eliminar esta obra?</Text>
+            <Text style={s.confirmDesc}>
+              Se borran también su presupuesto y su nómina. Esta acción no se puede deshacer.
+            </Text>
+            <View style={s.confirmBtns}>
+              <TouchableOpacity style={s.confirmCancelar} onPress={() => setConfirmarBorrado(false)} disabled={eliminando}>
+                <Text style={s.confirmCancelarText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.confirmEliminar, eliminando && s.deleteBtnDisabled]} onPress={eliminarObra} disabled={eliminando}>
+                {eliminando
+                  ? <ActivityIndicator size="small" color="#FFFFFF" />
+                  : <Text style={s.confirmEliminarText}>Eliminar</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -411,4 +436,14 @@ const s = StyleSheet.create({
   check:        { fontSize: 18, color: '#EA580C', fontWeight: '900' },
   modalCancelar:     { marginTop: 8, padding: 16, alignItems: 'center' },
   modalCancelarText: { fontSize: 15, color: '#6B7280', fontWeight: '600' },
+
+  // Confirmación de borrado
+  confirmSheet:       { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 22, marginHorizontal: 32, alignSelf: 'center' },
+  confirmTitle:       { fontSize: 17, fontWeight: '900', color: '#1F2937', marginBottom: 8, textAlign: 'center' },
+  confirmDesc:        { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 18 },
+  confirmBtns:        { flexDirection: 'row', gap: 10 },
+  confirmCancelar:    { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: '#F3F4F6', alignItems: 'center' },
+  confirmCancelarText:{ fontSize: 15, fontWeight: '700', color: '#6B7280' },
+  confirmEliminar:    { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: '#DC2626', alignItems: 'center' },
+  confirmEliminarText:{ fontSize: 15, fontWeight: '900', color: '#FFFFFF' },
 });

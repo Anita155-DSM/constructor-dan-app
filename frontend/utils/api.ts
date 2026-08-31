@@ -2,7 +2,14 @@
 // Centraliza la URL base y el header de autorización.
 // Todas las pantallas importan desde acá — si cambia algo, se cambia en un solo lugar.
 
-export const API_BASE = process.env.EXPO_PUBLIC_API_BASE || 'https://constructordan.onrender.com/api';
+// Acepta EXPO_PUBLIC_API_URL (nombre usado en .env) o EXPO_PUBLIC_API_BASE.
+// Normaliza: sin barra final y garantizando que termina en /api.
+const RAW_BASE =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.EXPO_PUBLIC_API_BASE ||
+  'https://constructordan.onrender.com/api';
+
+export const API_BASE = RAW_BASE.replace(/\/+$/, '').replace(/\/api$/, '') + '/api';
 
 /**
  * Devuelve el header Authorization con el token JWT guardado en localStorage.

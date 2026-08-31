@@ -1,3 +1,4 @@
+import { QueryTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import Obra from '../models/Obra.js';
 import Presupuesto from '../models/Presupuesto.js';
@@ -94,7 +95,7 @@ export const resumenGeneral = async (req, res) => {
           COALESCE(SUM(ganancia_contratista), 0)  AS ganancia_total
         FROM semanas_nomina
         WHERE obra_id = :obraId
-      `, { replacements: { obraId: obra.id }, type: sequelize.QueryTypes.SELECT });
+      `, { replacements: { obraId: obra.id }, type: QueryTypes.SELECT });
 
       const totalPresupuestado = presupuesto ? parseFloat(presupuesto.total_con_rebaja) : 0;
       const totalCobrado       = parseFloat(agg.total_cobrado);

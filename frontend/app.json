@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "Constructor Dan",
+    "scheme": "constructordan",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -40,9 +40,7 @@
           }
         }
       ],
-      "expo-status-bar",
       "expo-font",
-      "expo-image",
       "expo-web-browser"
     ],
     "experiments": {
@@ -54,6 +52,12 @@
       "eas": {
         "projectId": "07a85b1b-f0a7-44cd-b91e-2aab4bb24792"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/07a85b1b-f0a7-44cd-b91e-2aab4bb24792"
     }
   }
 }

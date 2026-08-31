@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 // permitir acceso a rutas protegidas (obras, nómina, etc.)
 const verificarToken = (req, res, next) => {
   // El token viene en la cookie httpOnly que seteamos al hacer login
+  // o en el header Authorization: Bearer <token>.
   const tokenCookie = req.cookies?.token;
   const authHeader = req.headers.authorization;
   const tokenBearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -14,7 +15,7 @@ const verificarToken = (req, res, next) => {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'FirmaSecretaSuperSegura123');
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
     // Adjuntamos el usuario al request para usarlo en los controllers
     req.usuario = payload;
     next();

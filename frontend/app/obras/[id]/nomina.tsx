@@ -89,6 +89,10 @@ export default function NominaScreen() {
       const res = await apiFetch(`/obras/${obraId}/nomina/actual`);
       if (res.status === 401) { router.replace('/login'); return; }
       const data = await res.json();
+      if (!res.ok) {
+        Alert.alert('Error', data?.error || 'No se pudo cargar la nómina.');
+        return;
+      }
       setFechaLunes(data.fecha_lunes);
       setReservaPct(data.reserva_herramienta_pct || 0);
       if (data.existe) {

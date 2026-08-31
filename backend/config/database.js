@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import 'dotenv/config';
@@ -8,30 +8,52 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 let sequelize;
 
+/**
+ * Resuelve el certificado CA para la conexión SSL de producción.
+ * Orden de búsqueda:
+ *   1. process.env.DB_CA_CERT  → PEM completo o base64 (útil en Render, donde no
+ *      se suben archivos).
+ *   2. backend/ca.pem          → archivo local.
+ *   3. null                    → sin CA. Se sigue usando SSL pero sin verificar
+ *      la cadena (Aiven igual cifra el tráfico). Se avisa por consola.
+ */
+function resolverCA() {
+  const fromEnv = process.env.DB_CA_CERT;
+  if (fromEnv && fromEnv.trim()) {
+    const raw = fromEnv.includes('BEGIN CERTIFICATE')
+      ? fromEnv
+      : Buffer.from(fromEnv, 'base64').toString('utf8');
+    return raw;
+  }
+
+  const caPath = join(__dirname, '..', 'ca.pem');
+  if (existsSync(caPath)) return readFileSync(caPath);
+
+  console.warn(
+    '[db] No se encontró certificado CA (DB_CA_CERT ni ca.pem). ' +
+    'Se conecta con SSL pero sin verificar la cadena de certificados.'
+  );
+  return null;
+}
+
 if (process.env.DATABASE_URL) {
   // ── Producción: Aiven con SSL ─────────────────────────────────────────────
-  // Usamos la clase URL para parsear y limpiar la URI correctamente.
-  // mysql2 no entiende parámetros como ssl-mode, sslmode, ssl, etc.
-  // Todo lo relacionado a SSL va en dialectOptions, no en la URI.
+  // mysql2 no entiende parámetros como ssl-mode, sslmode, ssl, etc. en la URI.
+  // Todo lo relacionado a SSL va en dialectOptions.
   const parsed = new URL(process.env.DATABASE_URL);
 
-  // Eliminar TODOS los parámetros SSL del query string
   const SSL_PARAMS = ['ssl-mode', 'sslmode', 'ssl', 'tls', 'require_secure_transport'];
   SSL_PARAMS.forEach(p => parsed.searchParams.delete(p));
 
   const cleanUrl = parsed.toString();
-
-  // Leer el certificado CA de Aiven
-  // Descargarlo desde: Aiven Console → tu servicio → Overview → CA Certificate
-  const caPem = readFileSync(join(__dirname, '..', 'ca.pem'));
+  const ca = resolverCA();
 
   sequelize = new Sequelize(cleanUrl, {
     dialect: 'mysql',
     dialectOptions: {
-      ssl: {
-        ca:                 caPem,
-        rejectUnauthorized: true,
-      },
+      ssl: ca
+        ? { ca, rejectUnauthorized: true }
+        : { rejectUnauthorized: false },
     },
     logging: false,
   });

@@ -78,6 +78,7 @@ export default function PresupuestoScreen() {
       setCargando(true);
       try {
         const res = await apiFetch(`/obras/${obraId}/presupuesto`);
+        if (res.status === 401) { router.replace('/login'); return; }
         if (res.ok) {
           const data = await res.json();
           setPresupuestoExistente(data);
@@ -460,7 +461,9 @@ export default function PresupuestoScreen() {
                 >
                   <View style={s.modalOpcionLeft}>
                     <Text style={s.modalOpcionLabel}>{t.label}</Text>
-                    {'detalle' in t && t.detalle && <Text style={s.modalOpcionDetalle}>{t.detalle}</Text>}
+                    {'detalle' in t && (t as { detalle?: string }).detalle && (
+                      <Text style={s.modalOpcionDetalle}>{(t as { detalle?: string }).detalle}</Text>
+                    )}
                   </View>
                   {t.precio_default > 0 && <Text style={s.modalOpcionPrecio}>${t.precio_default.toLocaleString('es-AR')}</Text>}
                 </TouchableOpacity>
