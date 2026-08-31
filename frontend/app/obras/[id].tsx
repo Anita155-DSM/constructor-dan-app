@@ -99,10 +99,18 @@ export default function DetalleObraScreen() {
         body: JSON.stringify({ estado: nuevoEstado }),
       });
       const data = await res.json();
-      if (res.ok) { setObra(data.obra); setModalEstado(false); }
-      else Alert.alert('Error', data.error || 'No se pudo cambiar el estado.');
+      if (res.ok && res.offline) {
+        // Sin conexión: aplicamos el cambio en pantalla; se envía al sincronizar.
+        setObra(prev => (prev ? { ...prev, estado: nuevoEstado } : prev));
+        setModalEstado(false);
+      } else if (res.ok) {
+        setObra(data.obra);
+        setModalEstado(false);
+      } else {
+        Alert.alert('Error', data.error || 'No se pudo cambiar el estado.');
+      }
     } catch {
-      Alert.alert('Sin conexión', 'Verificá que el servidor esté corriendo.');
+      Alert.alert('Sin conexión', 'No se pudo cambiar el estado. Intentá de nuevo.');
     } finally {
       setCambiando(false);
     }
@@ -121,6 +129,14 @@ export default function DetalleObraScreen() {
       }
 
       const text = await res.text();
+      if (res.ok && res.offline) {
+        Alert.alert(
+          'Se eliminará al sincronizar',
+          'La obra se quita del servidor cuando vuelva el internet.',
+          [{ text: 'Entendido', onPress: () => router.replace('/dashboard') }],
+        );
+        return;
+      }
       if (res.ok) {
         router.replace('/dashboard');
         return;

@@ -1,0 +1,18 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#1F2937"/>
+  <g transform="translate(0 40)">
+    <!-- ala del casco -->
+    <ellipse cx="512" cy="646" rx="430" ry="94" fill="#F59E0B"/>
+    <!-- cúpula -->
+    <path d="M150 632 C150 300 262 196 512 196 C762 196 874 300 874 632 Z" fill="#FBBF24"/>
+    <!-- brillo lateral -->
+    <path d="M150 632 C150 300 262 196 512 196 C420 224 322 336 322 632 Z" fill="#FDE68A" opacity="0.55"/>
+    <!-- crestas -->
+    <rect x="484" y="206" width="56" height="426" rx="28" fill="#F59E0B"/>
+    <path d="M302 612 C302 372 362 262 470 222" stroke="#F59E0B" stroke-width="38" fill="none" stroke-linecap="round"/>
+    <path d="M722 612 C722 372 662 262 554 222" stroke="#F59E0B" stroke-width="38" fill="none" stroke-linecap="round"/>
+    <!-- frente del ala -->
+    <ellipse cx="512" cy="624" rx="430" ry="88" fill="#FBBF24"/>
+    <ellipse cx="512" cy="628" rx="300" ry="58" fill="#F59E0B" opacity="0.30"/>
+  </g>
+</svg>

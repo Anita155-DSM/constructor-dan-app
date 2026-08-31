@@ -43,14 +43,19 @@ export default function NuevaObraScreen() {
       if (res.status === 401) { router.replace('/login'); return; }
 
       const data = await res.json();
-      if (res.ok) {
-        // ✅ FIX #1: redirige directo sin Alert intermedio que falla en Expo Web
+      if (res.ok && res.offline) {
+        Alert.alert(
+          'Guardada en el teléfono',
+          'La obra se envía sola cuando vuelva el internet.',
+          [{ text: 'Entendido', onPress: () => router.replace('/dashboard') }],
+        );
+      } else if (res.ok) {
         router.replace('/dashboard');
       } else {
         Alert.alert('Error', data.error || 'No se pudo guardar la obra.');
       }
     } catch {
-      Alert.alert('Sin conexión', 'Verificá que el servidor esté corriendo.');
+      Alert.alert('Sin conexión', 'No se pudo guardar. Intentá de nuevo.');
     } finally {
       setCargando(false);
     }

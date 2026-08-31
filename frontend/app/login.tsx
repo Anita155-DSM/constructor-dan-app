@@ -4,7 +4,7 @@ import {
   Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { API_BASE, guardarToken } from '../utils/api';
+import { API_BASE, guardarToken, haySesionGuardada, getUsuarioGuardado } from '../utils/api';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -28,14 +28,31 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok && data.ok) {
-        // Guardar token si el backend lo devuelve en el body
-        if (data.token) guardarToken(data.token);
+        if (data.token) await guardarToken(data.token, data.usuario ?? null);
         router.replace('/dashboard');
       } else {
         Alert.alert('Error', data.msg || 'Correo o contraseña incorrectos.');
       }
     } catch {
-      Alert.alert('Sin conexión', 'Verificá tu conexión o que el backend desplegado esté activo.');
+      // Sin internet: si ya inició sesión antes en este teléfono, lo dejamos
+      // entrar para seguir trabajando offline.
+      const usuario = await getUsuarioGuardado<{ email?: string }>();
+      const puedeEntrarOffline =
+        (await haySesionGuardada()) &&
+        (!usuario?.email || usuario.email.toLowerCase() === email.trim().toLowerCase());
+
+      if (puedeEntrarOffline) {
+        Alert.alert(
+          'Sin internet',
+          'Vas a entrar con la última sesión guardada. Podés trabajar normal; los datos se envían solos cuando vuelva la señal.',
+          [{ text: 'Entrar', onPress: () => router.replace('/dashboard') }],
+        );
+      } else {
+        Alert.alert(
+          'Sin conexión',
+          'No hay internet y todavía no iniciaste sesión en este teléfono. Conectate una vez para poder usar la app después sin señal.',
+        );
+      }
     } finally {
       setCargando(false);
     }

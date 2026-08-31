@@ -156,7 +156,13 @@ export default function PresupuestoScreen() {
       };
       const res  = await apiFetch(`/obras/${obraId}/presupuesto`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && res.offline) {
+        setMostrarConfirmAprobar(false);
+        Alert.alert(
+          'Guardado en el teléfono',
+          'El presupuesto se envía solo cuando vuelva el internet. Vas a poder aprobarlo cuando esté sincronizado.',
+        );
+      } else if (res.ok) {
         setPresupuestoExistente(data);
         setMostrarConfirmAprobar(false);
       } else {

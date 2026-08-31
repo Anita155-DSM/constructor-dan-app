@@ -29,6 +29,7 @@ type Peon = {
 
 type SemanaSaved = {
   id: number;
+  _pendiente?: boolean; // guardada en el teléfono, todavía no enviada al servidor
   fecha_lunes: string;
   monto_recibido: number;
   quien_pago: string | null;
@@ -205,8 +206,10 @@ export default function NominaScreen() {
         // Refrescar historial en segundo plano
         cargarHistorial();
         Alert.alert(
-          '✅ Guardado',
-          `Tu ganancia esta semana: $${ganancia.toLocaleString('es-AR')}`,
+          res.offline ? 'Guardado en el teléfono' : '✅ Guardado',
+          res.offline
+            ? `Tu ganancia esta semana: $${ganancia.toLocaleString('es-AR')}\n\nSe envía sola cuando vuelva el internet.`
+            : `Tu ganancia esta semana: $${ganancia.toLocaleString('es-AR')}`,
           [{ text: 'Ver historial', onPress: () => setTab('historial') }, { text: 'OK' }]
         );
       } else {
@@ -475,7 +478,11 @@ export default function NominaScreen() {
                       {/* Cabecera de semana */}
                       <View style={s.semanaHeader}>
                         <View style={s.semanaHeaderLeft}>
-                          {esSemanaActual && (
+                          {semana._pendiente ? (
+                            <View style={[s.semanaActualBadge, { backgroundColor: '#FEF3C7' }]}>
+                              <Text style={[s.semanaActualText, { color: '#92400E' }]}>Sin enviar</Text>
+                            </View>
+                          ) : esSemanaActual && (
                             <View style={s.semanaActualBadge}>
                               <Text style={s.semanaActualText}>Esta semana</Text>
                             </View>

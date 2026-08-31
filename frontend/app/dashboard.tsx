@@ -17,6 +17,7 @@ type ObraResumen = {
   saldo_pendiente: number;
   ganancia_total: number;
   tiene_presupuesto: boolean;
+  _pendiente?: boolean; // obra creada sin conexión, todavía no sincronizada
 };
 
 type Totales = {
@@ -65,16 +66,14 @@ export default function DashboardScreen() {
   const handleLogout = async () => {
     if (saliendo) return;
     setSaliendo(true);
-    limpiarSesion();
-    router.replace('/login');
-
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
     } catch {
-      // Si el backend no responde, igual ya quedó limpia la sesión local.
-    } finally {
-      setSaliendo(false);
+      // Si el backend no responde, igual limpiamos la sesión local.
     }
+    await limpiarSesion();
+    setSaliendo(false);
+    router.replace('/login');
   };
 
   const activas    = obras.filter(o => o.estado === 'activa');
@@ -185,13 +184,26 @@ function ObraCard({ obra, onPress }: { obra: ObraResumen; onPress: () => void })
     ? Math.min(100, Math.round((obra.total_cobrado / obra.total_presupuestado) * 100))
     : 0;
 
+  const handlePress = () => {
+    if (obra._pendiente) {
+      Alert.alert(
+        'Sin sincronizar',
+        'Esta obra se guardó en el teléfono. Vas a poder abrirla cuando haya internet y se envíe al servidor.',
+      );
+      return;
+    }
+    onPress();
+  };
+
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={s.card} onPress={handlePress} activeOpacity={0.8}>
       {/* Fila superior */}
       <View style={s.cardTop}>
         <Text style={s.cardCliente} numberOfLines={1}>{obra.nombre_cliente}</Text>
-        <View style={[s.badge, { backgroundColor: estado.fondo }]}>
-          <Text style={[s.badgeText, { color: estado.texto }]}>{estado.label}</Text>
+        <View style={[s.badge, { backgroundColor: obra._pendiente ? '#FEF3C7' : estado.fondo }]}>
+          <Text style={[s.badgeText, { color: obra._pendiente ? '#92400E' : estado.texto }]}>
+            {obra._pendiente ? 'Sin sincronizar' : estado.label}
+          </Text>
         </View>
       </View>
 
